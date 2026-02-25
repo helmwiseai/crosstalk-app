@@ -61,3 +61,8 @@
   - Track broader incidental vocabulary, but keep scheduler pressure on underexposed Level-0 words.
   - Favor dynamic focus bands over rigid hard-gate progression to avoid stale conversations.
 - Action: capture as design rule now; defer coding changes until explicitly requested.
+
+
+- W1-008 completed:
+  - Added Prisma schema draft for Postgres persistence focused on sessions/summaries/exposures/anonymized telemetry.
+  - Explicitly excludes full raw transcript persistence by default.

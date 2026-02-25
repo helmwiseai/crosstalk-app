@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  nativeLanguage String?
+  targetLanguage String
+  sessions       Session[]
+}
+
+model Session {
+  id              String   @id @default(uuid())
+  userId          String
+  targetLanguage  String
+  topic           String
+  level           String
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  durationSec     Int?
+  summary         String?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exposureEvents  ExposureEvent[]
+  telemetryEvents TelemetryEvent[]
+
+  @@index([userId, startedAt])
+}
+
+model ExposureEvent {
+  id        String   @id @default(uuid())
+  sessionId String
+  lemma     String
+  count     Int
+  createdAt DateTime @default(now())
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, lemma])
+}
+
+model TelemetryEvent {
+  id             String   @id @default(uuid())
+  sessionId      String
+  type           String
+  repairMode     Boolean?
+  intentAligned  Boolean?
+  repairAttempt  Int?
+  providerUsed   String?
+  targetHitCount Int?
+  createdAt      DateTime @default(now())
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model VocabProfile {
+  id             String   @id @default(uuid())
+  userId         String
+  targetLanguage String
+  lemma          String
+  exposuresTotal Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, targetLanguage, lemma])
+}
