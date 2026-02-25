@@ -26,3 +26,10 @@
 1. For summary retention window, keep session summaries indefinitely or auto-expire after N days?
 2. For pilot analytics, okay to store anonymized turn-level signals (repairMode flag, targetHits count) without full text?
 3. For Week 2, do we prioritize realtime voice transport first, or Gemini provider integration first (text-in/text-out), then voice?
+
+
+## Decisions confirmed (2026-02-25 follow-up)
+4. Session summaries retention: keep forever (short summaries only).
+5. Telemetry approved: store anonymized turn signals (`repairMode`, `targetHits` count) without full text.
+6. Week 2 execution order: Gemini text integration first, then realtime voice transport.
+7. Product direction reminder: maintain end-goal architecture for realtime voice-first Crosstalk experience while sequencing for fastest shippable MVP.
