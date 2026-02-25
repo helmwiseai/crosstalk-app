@@ -1,10 +1,6 @@
 import { detectMisunderstanding, enforceLevel0Output } from '../constraintPolicy.js';
 import { buildTurnTelemetry } from '../telemetry.js';
 
-function hasClarificationCue(text = '') {
-  return /(are you asking|do you mean|what do you mean|are you saying|is that what you mean|você está perguntando|voce esta perguntando|o que você quer dizer|o que voce quer dizer)/i.test(text);
-}
-
 export class TurnPipeline {
   constructor({ sessionRepository, generator, fallbackGenerator }) {
     this.sessionRepository = sessionRepository;
@@ -17,7 +13,6 @@ export class TurnPipeline {
     if (!session) return null;
 
     const misunderstandingCue = detectMisunderstanding(userInput);
-    const clarificationCue = hasClarificationCue(userInput);
 
     let decision;
     let providerUsed = 'primary';
@@ -30,7 +25,7 @@ export class TurnPipeline {
         userInput,
         lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
         repairAttempt: session.flow.repairAttempt || 0,
-        activeRepair: misunderstandingCue || clarificationCue
+        activeRepair: misunderstandingCue
       });
     } catch (_err) {
       decision = this.fallbackGenerator.generate({
@@ -40,14 +35,14 @@ export class TurnPipeline {
         userInput,
         lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
         repairAttempt: session.flow.repairAttempt || 0,
-        activeRepair: misunderstandingCue || clarificationCue
+        activeRepair: misunderstandingCue
       });
       providerUsed = 'fallback';
     }
 
     // Natural mode: LLM leads conversation flow.
     // Controller only enforces minimal hard guardrails.
-    const repairMode = misunderstandingCue || clarificationCue;
+    const repairMode = misunderstandingCue;
 
     let enforced = enforceLevel0Output({
       rawText: decision.assistantTextPtBr,
