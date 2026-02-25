@@ -1,18 +1,6 @@
 import { detectMisunderstanding, enforceLevel0Output } from '../constraintPolicy.js';
 import { buildTurnTelemetry } from '../telemetry.js';
 
-const MAX_REPAIR_ATTEMPTS = 3;
-
-function isSocialSideStep(text = '') {
-  return /(how are you|como vai|tudo bem\?|i'?m good|im good|thank you|obrigado|bom dia|boa noite)/i.test(text);
-}
-
-function chooseNextTopic(current) {
-  const options = ['comida', 'casa', 'rotina', 'família', 'trabalho'];
-  const idx = options.indexOf(current);
-  return options[(idx + 1) % options.length];
-}
-
 export class TurnPipeline {
   constructor({ sessionRepository, generator, fallbackGenerator }) {
     this.sessionRepository = sessionRepository;
@@ -28,6 +16,7 @@ export class TurnPipeline {
 
     let decision;
     let providerUsed = 'primary';
+
     try {
       decision = await this.generator.generate({
         topic: session.topic,
@@ -36,7 +25,7 @@ export class TurnPipeline {
         userInput,
         lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
         repairAttempt: session.flow.repairAttempt || 0,
-        activeRepair: (session.flow.repairAttempt || 0) > 0
+        activeRepair: misunderstandingCue
       });
     } catch (_err) {
       decision = this.fallbackGenerator.generate({
@@ -46,40 +35,14 @@ export class TurnPipeline {
         userInput,
         lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
         repairAttempt: session.flow.repairAttempt || 0,
-        activeRepair: (session.flow.repairAttempt || 0) > 0
+        activeRepair: misunderstandingCue
       });
       providerUsed = 'fallback';
     }
 
-    const shiftIntent = Boolean(decision.shiftIntent);
-    const llmRepairNeeded = Boolean(decision.repairNeeded);
-    const hasActiveQuestion = Boolean(session.flow.lastAssistantQuestion);
-    const socialSideStep = isSocialSideStep(userInput);
-    const repairMode = !shiftIntent && !socialSideStep && (misunderstandingCue || (hasActiveQuestion && llmRepairNeeded));
-
-    const effectiveIntentAligned = hasActiveQuestion ? Boolean(decision.intentAligned) : true;
-
-    if (repairMode) {
-      session.flow.repairAttempt = (session.flow.repairAttempt || 0) + 1;
-    } else {
-      session.flow.repairAttempt = 0;
-    }
-
-    if (session.flow.repairAttempt >= MAX_REPAIR_ATTEMPTS) {
-      decision.assistantTextPtBr = 'Tudo bem, não é importante. Vamos continuar com calma.';
-      decision.nextQuestion = '';
-      session.flow.repairAttempt = 0;
-      providerUsed = 'controller';
-    }
-
-    if (shiftIntent) {
-      const nextTopic = chooseNextTopic(session.topic);
-      session.topic = nextTopic;
-      session.summaryKeywords.add(nextTopic);
-      decision.assistantTextPtBr = `Tudo bem, mudamos de assunto. Agora falamos de ${nextTopic}. O que você acha?`;
-      decision.nextQuestion = 'O que você acha?';
-      providerUsed = providerUsed === 'primary' ? 'controller' : providerUsed;
-    }
+    // Natural mode: LLM leads conversation flow.
+    // Controller only enforces minimal hard guardrails.
+    const repairMode = misunderstandingCue;
 
     let enforced = enforceLevel0Output({
       rawText: decision.assistantTextPtBr,
@@ -87,6 +50,7 @@ export class TurnPipeline {
       repairMode
     });
 
+    // If model output violates hard constraints, use safe fallback sentence.
     if (!enforced.validation?.valid) {
       const safeFallback = this.fallbackGenerator.generate({
         topic: session.topic,
@@ -114,6 +78,7 @@ export class TurnPipeline {
     }
 
     session.flow.lastAssistantQuestion = decision.nextQuestion || '';
+    session.flow.repairAttempt = repairMode ? (session.flow.repairAttempt || 0) + 1 : 0;
 
     session.turns.push({
       at: Date.now(),
@@ -126,12 +91,13 @@ export class TurnPipeline {
     const tokens = userInput.toLowerCase().split(/\W+/).filter(Boolean).slice(0, 6);
     tokens.forEach((t) => session.summaryKeywords.add(t));
 
+    const intentAligned = Boolean(decision.intentAligned ?? true);
     session.telemetry.push(
       buildTurnTelemetry({
         repairMode,
         targetHits,
         providerUsed,
-        intentAligned: effectiveIntentAligned,
+        intentAligned,
         repairAttempt: session.flow.repairAttempt || 0
       })
     );
@@ -146,7 +112,7 @@ export class TurnPipeline {
       complexity: enforced.complexity,
       validation: enforced.validation,
       providerUsed,
-      intentAligned: effectiveIntentAligned,
+      intentAligned,
       repairAttempt: session.flow.repairAttempt || 0
     };
   }

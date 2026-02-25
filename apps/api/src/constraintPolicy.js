@@ -1,6 +1,6 @@
 import { getLanguageProfile } from './config/languageProfiles.js';
 
-const MISUNDERSTANDING_CUES = ['não entendi', 'nao entendi', 'what', 'não sei', 'nao sei', 'confuso', 'hã', 'huh'];
+const MISUNDERSTANDING_CUES = ['não entendi', 'nao entendi', 'não sei', 'nao sei', 'confuso', 'hã'];
 
 export function detectMisunderstanding(input = '') {
   const t = input.toLowerCase();
