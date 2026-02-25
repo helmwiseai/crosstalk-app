@@ -1,0 +1,12 @@
+{
+  "name": "@crosstalk/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "check": "echo contracts ok",
+    "build": "echo contracts build skipped"
+  }
+}

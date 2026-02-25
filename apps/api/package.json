@@ -1,0 +1,14 @@
+{
+  "name": "@crosstalk/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "build": "echo api build skipped",
+    "check": "node --check src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

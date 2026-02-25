@@ -1,0 +1,14 @@
+{
+  "name": "crosstalk-app",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws build",
+    "dev:api": "npm --workspace @crosstalk/api run dev",
+    "check": "npm run -ws check"
+  }
+}
