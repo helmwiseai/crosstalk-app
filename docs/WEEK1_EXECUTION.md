@@ -23,6 +23,6 @@ Stand up the MVP technical spine for Crosstalk: session lifecycle + enforceable 
 
 ## Next Immediate
 - W1-008: DB schema draft (summary/exposure-first persistence)
-- W1-009: Provider adapter interfaces (Gemini-first) — in progress via `StubGenerator` interface path
-- W1-010: Local test script for full session loop
+- W1-009: Provider adapter interfaces (Gemini-first) ✅ (`GeminiGenerator` + stub fallback)
+- W1-010: Local test script for full session loop ✅ (`npm run test:e2e`)
 - W1-011: Replace in-memory repository with Postgres adapter

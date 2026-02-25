@@ -26,6 +26,12 @@
   - introduced explicit `TurnPipeline` (`ingest -> detect -> generate -> enforce -> telemetry -> respond`).
   - split generator from policy enforcement using provider-style `StubGenerator`.
   - added language profile config (`pt-BR`) so future languages are config-driven instead of hardcoded.
+- Gemini integration completed (text generation path):
+  - Added `GeminiGenerator` provider and wired provider selection via env (`GENERATOR_PROVIDER=gemini|stub`).
+  - Added fallback-to-stub behavior on provider failure.
+  - Kept Level-0 policy enforcement server-side after generation.
+  - Added local env loader for VPS/dev simplicity.
+  - Verified live request path returns `providerUsed: "primary"` when Gemini succeeds.
 
 ## PM Questions Pending
 1. For summary retention window, keep session summaries indefinitely or auto-expire after N days?

@@ -2,23 +2,38 @@ import { detectMisunderstanding, enforceLevel0Output } from '../constraintPolicy
 import { buildTurnTelemetry } from '../telemetry.js';
 
 export class TurnPipeline {
-  constructor({ sessionRepository, generator }) {
+  constructor({ sessionRepository, generator, fallbackGenerator }) {
     this.sessionRepository = sessionRepository;
     this.generator = generator;
+    this.fallbackGenerator = fallbackGenerator;
   }
 
-  run({ sessionId, userInput, inputMode = 'text' }) {
+  async run({ sessionId, userInput, inputMode = 'text' }) {
     const session = this.sessionRepository.getSession(sessionId);
     if (!session) return null;
 
     const repairMode = detectMisunderstanding(userInput);
 
-    const rawGeneratedText = this.generator.generate({
-      topic: session.topic,
-      targetWords: session.targetWords,
-      repairMode,
-      targetLanguage: session.targetLanguage
-    });
+    let rawGeneratedText;
+    let providerUsed = 'primary';
+    try {
+      rawGeneratedText = await this.generator.generate({
+        topic: session.topic,
+        targetWords: session.targetWords,
+        repairMode,
+        targetLanguage: session.targetLanguage,
+        userInput
+      });
+    } catch (_err) {
+      rawGeneratedText = this.fallbackGenerator.generate({
+        topic: session.topic,
+        targetWords: session.targetWords,
+        repairMode,
+        targetLanguage: session.targetLanguage,
+        userInput
+      });
+      providerUsed = 'fallback';
+    }
 
     const enforced = enforceLevel0Output({
       rawText: rawGeneratedText,
@@ -38,7 +53,8 @@ export class TurnPipeline {
       at: Date.now(),
       inputMode,
       repairMode,
-      targetHitsCount: targetHits.length
+      targetHitsCount: targetHits.length,
+      providerUsed
     });
 
     const tokens = userInput.toLowerCase().split(/\W+/).filter(Boolean).slice(0, 6);
@@ -53,7 +69,8 @@ export class TurnPipeline {
       repairMode,
       targetHits,
       complexity: enforced.complexity,
-      validation: enforced.validation
+      validation: enforced.validation,
+      providerUsed
     };
   }
 }
