@@ -13,8 +13,24 @@ export type StartSessionResponse = {
   level: 'L0';
 };
 
+export type TurnRequest = {
+  sessionId: string;
+  userInput: string;
+  inputMode?: 'text' | 'voice';
+};
+
+export type TurnResponse = {
+  sessionId: string;
+  assistantTextPtBr: string;
+  repairMode: boolean;
+  targetHits: string[];
+  complexity: 'simple' | 'simpler';
+};
+
 export type EndSessionResponse = {
   sessionId: string;
   durationSec: number;
+  topic: string;
+  summary: string;
   exposureSummary: Array<{ lemma: string; count: number }>;
 };

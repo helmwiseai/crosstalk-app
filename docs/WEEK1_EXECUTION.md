@@ -9,6 +9,8 @@ Stand up the MVP technical spine for Crosstalk: session lifecycle + enforceable 
 - W1-003: In-memory session store and target-word seed logic
 - W1-004: Web shell with session state flow placeholders
 - W1-005: PM docs + decision log + open questions
+- W1-006: `/sessions/:id/turn` contract + endpoint stub
+- W1-007: Level-0 constraint policy module scaffold
 
 ## Done This Cycle
 - W1-001 ✅
@@ -16,8 +18,10 @@ Stand up the MVP technical spine for Crosstalk: session lifecycle + enforceable 
 - W1-003 ✅
 - W1-004 ✅
 - W1-005 ✅
+- W1-006 ✅
+- W1-007 ✅
 
 ## Next Immediate
-- W1-006: `/sessions/:id/turn` contract + stub
-- W1-007: Constraint policy module (Level-0 rule checks)
-- W1-008: DB schema draft (Prisma)
+- W1-008: DB schema draft (summary/exposure-first persistence)
+- W1-009: Provider adapter interfaces (Gemini-first)
+- W1-010: Local test script for full session loop

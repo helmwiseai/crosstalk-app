@@ -12,7 +12,17 @@
 - Repo created: `github.com/helmwiseai/crosstalk-app`.
 - Risk noted: persistent threaded PM subagent unavailable on current channel; mitigation is strict file-based PM log + periodic focused PM runs.
 
+## Decisions captured from Pat
+1. Text fallback allowed for early testing and automation.
+2. Data minimization default: store exposure metrics + short summary, not full raw transcript by default.
+3. Prioritize easiest local/VPS testing path and fastest shippable loop.
+
+## Implementation notes
+- Added `/sessions/:sessionId/turn` endpoint with repair-mode detection and L0 policy wrapper.
+- Added `constraintPolicy` scaffold to keep enforcement in code path (not prompt-only architecture).
+- End session now emits minimal `summary` + exposure counts.
+
 ## PM Questions Pending
-1. For MVP turn loop, do we allow temporary text-input fallback when mic permissions fail? (recommended: yes)
-2. Should pilot transcripts be stored by default for debugging? (recommended: opt-in toggle)
-3. Which hosting split do we want for first deploy: all-on-VPS or web on Vercel + API on VPS?
+1. For summary retention window, keep session summaries indefinitely or auto-expire after N days?
+2. For pilot analytics, okay to store anonymized turn-level signals (repairMode flag, targetHits count) without full text?
+3. For Week 2, do we prioritize realtime voice transport first, or Gemini provider integration first (text-in/text-out), then voice?

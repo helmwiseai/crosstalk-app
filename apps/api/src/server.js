@@ -1,5 +1,6 @@
 import express from 'express';
 import { SessionStore } from './sessionStore.js';
+import { applyLevel0Policy } from './constraintPolicy.js';
 
 const app = express();
 const store = new SessionStore();
@@ -29,6 +30,33 @@ app.post('/sessions/start', (req, res) => {
     topic: session.topic,
     targetWords: session.targetWords,
     level: session.level
+  });
+});
+
+app.post('/sessions/:sessionId/turn', (req, res) => {
+  const { sessionId } = req.params;
+  const { userInput } = req.body || {};
+
+  if (!userInput || typeof userInput !== 'string') {
+    return res.status(400).json({ error: 'userInput (string) is required' });
+  }
+
+  const turn = store.handleTurn(sessionId, userInput);
+  if (!turn) {
+    return res.status(404).json({ error: 'session not found' });
+  }
+
+  const policy = applyLevel0Policy({
+    rawText: turn.assistantRaw,
+    repairMode: turn.repairMode
+  });
+
+  return res.status(200).json({
+    sessionId,
+    assistantTextPtBr: policy.text,
+    repairMode: turn.repairMode,
+    targetHits: turn.targetHits,
+    complexity: policy.complexity
   });
 });
 
