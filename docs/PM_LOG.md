@@ -73,3 +73,4 @@
   - Controller now keeps only hard guardrails: language/quality validation, fallback safety, telemetry, exposure counting.
   - Shifted iteration model to session-based prompt tuning: run session -> collect report -> adjust next prompt.
   - Added end-of-session `sessionReport` with prompt-tuning hints (repair turns, avg response length, low-exposure words).
+  - Added full-session all-word exposure tracking (not only target words) for richer analysis and prompt tuning.

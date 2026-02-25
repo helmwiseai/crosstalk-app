@@ -76,6 +76,17 @@ export class TurnPipeline {
       }
     }
 
+    const tokens = enforced.text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .split(/[^a-zA-Z0-9]+/)
+      .filter(Boolean);
+
+    for (const tk of tokens) {
+      session.allWordExposure[tk] = (session.allWordExposure[tk] || 0) + 1;
+    }
+
     session.flow.lastAssistantQuestion = decision.nextQuestion || '';
     session.flow.repairAttempt = repairMode ? (session.flow.repairAttempt || 0) + 1 : 0;
 
@@ -89,8 +100,8 @@ export class TurnPipeline {
       targetHitsCount: targetHits.length
     });
 
-    const tokens = userInput.toLowerCase().split(/\W+/).filter(Boolean).slice(0, 6);
-    tokens.forEach((t) => session.summaryKeywords.add(t));
+    const summaryTokens = userInput.toLowerCase().split(/\W+/).filter(Boolean).slice(0, 6);
+    summaryTokens.forEach((t) => session.summaryKeywords.add(t));
 
     const intentAligned = Boolean(decision.intentAligned ?? true);
     session.telemetry.push(

@@ -24,6 +24,7 @@ export class InMemorySessionRepository extends SessionRepository {
       level: 'L0',
       targetWords,
       exposure: Object.fromEntries(targetWords.map((w) => [w, 0])),
+      allWordExposure: {},
       startedAt: Date.now(),
       turns: [],
       summaryKeywords: new Set([selectedTopic]),
@@ -68,6 +69,10 @@ export class InMemorySessionRepository extends SessionRepository {
       .map((r) => r.lemma)
       .slice(0, 5);
 
+    const fullWordExposure = Object.entries(session.allWordExposure || {})
+      .map(([lemma, count]) => ({ lemma, count }))
+      .sort((a, b) => b.count - a.count);
+
     this.sessions.delete(sessionId);
 
     return {
@@ -76,10 +81,12 @@ export class InMemorySessionRepository extends SessionRepository {
       topic: session.topic,
       summary,
       exposureSummary,
+      fullWordExposure,
       sessionReport: {
         repairTurns,
         avgAssistantWords: avgWords,
         lowExposureHints: lowExposure,
+        totalUniqueWords: fullWordExposure.length,
         promptTuningSuggestion:
           repairTurns > 2
             ? 'Increase simplification and clarification examples in next prompt.'
