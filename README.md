@@ -24,3 +24,8 @@ Week 1 foundation is live:
 - Session lifecycle endpoints implemented
 - Turn pipeline refactor in place (repository + generator + policy enforcement + telemetry)
 - E2E smoke script available (`npm run test:e2e`)
+
+
+## Quick text demo
+1. Start API: `node apps/api/src/server.js`
+2. In a second terminal: `npm run demo:text`
