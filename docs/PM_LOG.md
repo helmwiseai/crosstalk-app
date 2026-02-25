@@ -21,6 +21,11 @@
 - Added `/sessions/:sessionId/turn` endpoint with repair-mode detection and L0 policy wrapper.
 - Added `constraintPolicy` scaffold to keep enforcement in code path (not prompt-only architecture).
 - End session now emits minimal `summary` + exposure counts.
+- Refactor pass completed:
+  - introduced `InMemorySessionRepository` behind repository abstraction.
+  - introduced explicit `TurnPipeline` (`ingest -> detect -> generate -> enforce -> telemetry -> respond`).
+  - split generator from policy enforcement using provider-style `StubGenerator`.
+  - added language profile config (`pt-BR`) so future languages are config-driven instead of hardcoded.
 
 ## PM Questions Pending
 1. For summary retention window, keep session summaries indefinitely or auto-expire after N days?

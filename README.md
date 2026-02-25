@@ -20,4 +20,7 @@ Voice-first language acquisition app.
 4. Add provider abstraction stubs (ASR/TTS/LLM)
 
 ## Status
-Bootstrap scaffold created.
+Week 1 foundation is live:
+- Session lifecycle endpoints implemented
+- Turn pipeline refactor in place (repository + generator + policy enforcement + telemetry)
+- E2E smoke script available (`npm run test:e2e`)

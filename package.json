@@ -9,6 +9,7 @@
   "scripts": {
     "build": "npm run -ws build",
     "dev:api": "npm --workspace @crosstalk/api run dev",
-    "check": "npm run -ws check"
+    "check": "npm run -ws check",
+    "test:e2e": "bash scripts/e2e-session-smoke.sh"
   }
 }

@@ -1,18 +1,6 @@
-const COMPLEXITY_LIMITS = {
-  simple: 12,
-  simpler: 8
-};
+import { getLanguageProfile } from './config/languageProfiles.js';
 
-const MISUNDERSTANDING_CUES = [
-  'não entendi',
-  'nao entendi',
-  'what',
-  'não sei',
-  'nao sei',
-  'confuso',
-  'hã',
-  'huh'
-];
+const MISUNDERSTANDING_CUES = ['não entendi', 'nao entendi', 'what', 'não sei', 'nao sei', 'confuso', 'hã', 'huh'];
 
 export function detectMisunderstanding(input = '') {
   const t = input.toLowerCase();
@@ -24,21 +12,36 @@ function trimToWordLimit(text, limit) {
   return words.slice(0, limit).join(' ');
 }
 
-export function applyLevel0Policy({ rawText, repairMode }) {
-  // Keep Portuguese-only behavior by generating PT text server-side in this stub.
-  // In provider-backed mode, this function will validate and rewrite if needed.
-  const complexity = repairMode ? 'simpler' : 'simple';
-  const limited = trimToWordLimit(rawText, COMPLEXITY_LIMITS[complexity]);
-  return {
-    text: limited,
-    complexity
-  };
+export function validateLevel0Output({ text, targetLanguage, repairMode }) {
+  const profile = getLanguageProfile(targetLanguage);
+  if (!profile) return { valid: false, reason: 'unknown_language_profile' };
+
+  const maxWords = repairMode ? profile.level0.maxWordsRepair : profile.level0.maxWordsSimple;
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length > maxWords) return { valid: false, reason: 'word_limit_exceeded' };
+
+  // Lightweight language guardrail placeholder.
+  if (profile.level0.requireTargetLanguage && /\b(the|and|is|are|you|your)\b/i.test(text)) {
+    return { valid: false, reason: 'likely_non_target_language' };
+  }
+
+  return { valid: true };
 }
 
-export function buildStubReply({ topic, targetWords, repairMode }) {
-  const [w1, w2] = targetWords;
-  if (repairMode) {
-    return `Tudo bem. Vamos devagar. Hoje: ${topic}. Eu falo simples. ${w1} e ${w2}.`;
+export function enforceLevel0Output({ rawText, targetLanguage, repairMode }) {
+  const profile = getLanguageProfile(targetLanguage);
+  if (!profile) {
+    return {
+      text: rawText,
+      complexity: repairMode ? 'simpler' : 'simple',
+      validation: { valid: false, reason: 'unknown_language_profile' }
+    };
   }
-  return `Hoje falamos sobre ${topic}. Eu uso ${w1} e ${w2} em frases curtas.`;
+
+  const complexity = repairMode ? 'simpler' : 'simple';
+  const maxWords = repairMode ? profile.level0.maxWordsRepair : profile.level0.maxWordsSimple;
+  const trimmed = trimToWordLimit(rawText, maxWords);
+  const validation = validateLevel0Output({ text: trimmed, targetLanguage, repairMode });
+
+  return { text: trimmed, complexity, validation };
 }

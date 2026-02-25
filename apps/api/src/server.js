@@ -1,9 +1,15 @@
 import express from 'express';
-import { SessionStore } from './sessionStore.js';
-import { applyLevel0Policy } from './constraintPolicy.js';
+import { InMemorySessionRepository } from './repositories/inMemorySessionRepository.js';
+import { StubGenerator } from './providers/stubGenerator.js';
+import { TurnPipeline } from './pipeline/turnPipeline.js';
 
 const app = express();
-const store = new SessionStore();
+const sessionRepository = new InMemorySessionRepository();
+const turnPipeline = new TurnPipeline({
+  sessionRepository,
+  generator: new StubGenerator()
+});
+
 const port = process.env.PORT || 3001;
 
 app.use(express.json());
@@ -15,15 +21,12 @@ app.get('/health', (_req, res) => {
 app.post('/sessions/start', (req, res) => {
   const { userId, topic, targetLanguage } = req.body || {};
 
-  if (!userId) {
-    return res.status(400).json({ error: 'userId is required' });
-  }
-
+  if (!userId) return res.status(400).json({ error: 'userId is required' });
   if (targetLanguage !== 'pt-BR') {
     return res.status(400).json({ error: 'MVP supports only targetLanguage=pt-BR' });
   }
 
-  const session = store.startSession({ userId, topic });
+  const session = sessionRepository.startSession({ userId, topic, targetLanguage });
 
   return res.status(201).json({
     sessionId: session.sessionId,
@@ -35,42 +38,30 @@ app.post('/sessions/start', (req, res) => {
 
 app.post('/sessions/:sessionId/turn', (req, res) => {
   const { sessionId } = req.params;
-  const { userInput } = req.body || {};
+  const { userInput, inputMode } = req.body || {};
 
   if (!userInput || typeof userInput !== 'string') {
     return res.status(400).json({ error: 'userInput (string) is required' });
   }
 
-  const turn = store.handleTurn(sessionId, userInput);
-  if (!turn) {
-    return res.status(404).json({ error: 'session not found' });
-  }
-
-  const policy = applyLevel0Policy({
-    rawText: turn.assistantRaw,
-    repairMode: turn.repairMode
-  });
+  const turn = turnPipeline.run({ sessionId, userInput, inputMode: inputMode || 'text' });
+  if (!turn) return res.status(404).json({ error: 'session not found' });
 
   return res.status(200).json({
-    sessionId,
-    assistantTextPtBr: policy.text,
+    sessionId: turn.sessionId,
+    assistantTextPtBr: turn.assistantTextPtBr,
     repairMode: turn.repairMode,
     targetHits: turn.targetHits,
-    complexity: policy.complexity
+    complexity: turn.complexity
   });
 });
 
 app.post('/sessions/end', (req, res) => {
   const { sessionId } = req.body || {};
+  if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
 
-  if (!sessionId) {
-    return res.status(400).json({ error: 'sessionId is required' });
-  }
-
-  const summary = store.endSession(sessionId);
-  if (!summary) {
-    return res.status(404).json({ error: 'session not found' });
-  }
+  const summary = sessionRepository.endSession(sessionId);
+  if (!summary) return res.status(404).json({ error: 'session not found' });
 
   return res.status(200).json(summary);
 });
