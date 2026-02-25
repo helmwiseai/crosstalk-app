@@ -7,6 +7,7 @@ const QUESTION_PATTERNS = [
 const AFFIRMATION_RE = /\b(sim|yes|yeah|yep|gosto|amo|legal|ok|beleza)\b/i;
 const NEGATION_RE = /\b(não|nao|no|not)\b/i;
 const CAPABILITY_RE = /\b(sab|consig|posso|can|can't|cannot|sei|não sei|nao sei)\b/i;
+const TOPIC_SHIFT_RE = /(move on|move off|different topic|something else|change topic|muda de assunto|outro assunto)/i;
 
 export function classifyAssistantIntent(text = '') {
   const t = text.toLowerCase();
@@ -36,14 +37,26 @@ export function isUserAligned({ intentType, userInput = '' }) {
   return true;
 }
 
+export function userRequestedTopicShift(userInput = '') {
+  return TOPIC_SHIFT_RE.test(userInput);
+}
+
 export function buildRepairPrompt({ originalQuestion, attempt }) {
+  const text = (originalQuestion || '').trim();
+  const qPos = text.lastIndexOf('?');
+  let q = 'você gosta disso?';
+  if (qPos >= 0) {
+    const dotPos = text.lastIndexOf('.', qPos);
+    q = text.slice(dotPos + 1, qPos + 1).trim() || q;
+  }
+
   if (attempt >= 3) {
     return 'Tudo bem, não é importante. Vamos continuar devagar.';
   }
 
   if (attempt === 2) {
-    return `Quase. Minha pergunta é: ${originalQuestion} Responda sim ou não.`;
+    return `Quase. Minha pergunta: ${q} Responda sim ou não.`;
   }
 
-  return `Não. Minha pergunta é: ${originalQuestion}`;
+  return `Não. Minha pergunta: ${q}`;
 }

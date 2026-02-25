@@ -3,8 +3,9 @@ export const languageProfiles = {
     code: 'pt-BR',
     displayName: 'Portuguese (Brazil)',
     level0: {
-      maxWordsSimple: 12,
-      maxWordsRepair: 8,
+      maxWordsSimple: 16,
+      maxWordsRepair: 12,
+      minWords: 3,
       requireTargetLanguage: true
     },
     defaultTopics: ['comida', 'casa', 'rotina', 'família', 'trabalho'],

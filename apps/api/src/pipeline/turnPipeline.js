@@ -1,6 +1,6 @@
 import { detectMisunderstanding, enforceLevel0Output } from '../constraintPolicy.js';
 import { buildIntentTelemetry, buildTurnTelemetry } from '../telemetry.js';
-import { buildRepairPrompt, classifyAssistantIntent, isUserAligned } from '../intent.js';
+import { buildRepairPrompt, classifyAssistantIntent, isUserAligned, userRequestedTopicShift } from '../intent.js';
 
 const MAX_REPAIR_ATTEMPTS = 3;
 
@@ -14,6 +14,27 @@ export class TurnPipeline {
   async run({ sessionId, userInput, inputMode = 'text' }) {
     const session = this.sessionRepository.getSession(sessionId);
     if (!session) return null;
+
+    if (userRequestedTopicShift(userInput)) {
+      const nextTopic = session.topic === 'comida' ? 'casa' : 'comida';
+      session.topic = nextTopic;
+      session.summaryKeywords.add(nextTopic);
+      session.flow.repairAttempt = 0;
+      session.flow.lastAssistantIntent = 'statement';
+      session.flow.lastAssistantQuestion = '';
+      this.sessionRepository.saveSession(session);
+      return {
+        sessionId,
+        assistantTextPtBr: `Tudo bem, mudamos de assunto. Agora falamos de ${nextTopic}. Você gosta disso?`,
+        repairMode: false,
+        targetHits: [],
+        complexity: 'simple',
+        validation: { valid: true },
+        providerUsed: 'controller',
+        intentAligned: true,
+        repairAttempt: 0
+      };
+    }
 
     const previousIntent = session.flow?.lastAssistantIntent || 'statement';
     const intentAligned = isUserAligned({ intentType: previousIntent, userInput });
