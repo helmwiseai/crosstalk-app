@@ -36,4 +36,10 @@ export type EndSessionResponse = {
   topic: string;
   summary: string;
   exposureSummary: Array<{ lemma: string; count: number }>;
+  sessionReport?: {
+    repairTurns: number;
+    avgAssistantWords: number;
+    lowExposureHints: string[];
+    promptTuningSuggestion: string;
+  };
 };

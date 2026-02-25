@@ -56,6 +56,18 @@ export class InMemorySessionRepository extends SessionRepository {
     const exposureSummary = Object.entries(session.exposure).map(([lemma, count]) => ({ lemma, count }));
     const summary = `Tema: ${session.topic}. Conversa curta com foco em ${[...session.summaryKeywords].slice(0, 8).join(', ')}.`;
 
+    const repairTurns = (session.turns || []).filter((t) => t.repairMode).length;
+    const avgWords = (() => {
+      const turns = (session.turns || []).map((t) => (t.assistantTextPtBr || '').split(/\s+/).filter(Boolean).length);
+      if (!turns.length) return 0;
+      return Math.round(turns.reduce((a, b) => a + b, 0) / turns.length);
+    })();
+
+    const lowExposure = exposureSummary
+      .filter((r) => r.count < 2)
+      .map((r) => r.lemma)
+      .slice(0, 5);
+
     this.sessions.delete(sessionId);
 
     return {
@@ -63,7 +75,16 @@ export class InMemorySessionRepository extends SessionRepository {
       durationSec,
       topic: session.topic,
       summary,
-      exposureSummary
+      exposureSummary,
+      sessionReport: {
+        repairTurns,
+        avgAssistantWords: avgWords,
+        lowExposureHints: lowExposure,
+        promptTuningSuggestion:
+          repairTurns > 2
+            ? 'Increase simplification and clarification examples in next prompt.'
+            : 'Keep prompt style; tune focus words for better exposure spread.'
+      }
     };
   }
 

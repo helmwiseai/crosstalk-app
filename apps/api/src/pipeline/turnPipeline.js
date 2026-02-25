@@ -23,9 +23,8 @@ export class TurnPipeline {
         targetWords: session.targetWords,
         targetLanguage: session.targetLanguage,
         userInput,
-        lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
-        repairAttempt: session.flow.repairAttempt || 0,
-        activeRepair: misunderstandingCue
+        repairMode: misunderstandingCue,
+        recentTurns: session.turns || []
       });
     } catch (_err) {
       decision = this.fallbackGenerator.generate({
@@ -84,8 +83,10 @@ export class TurnPipeline {
       at: Date.now(),
       inputMode,
       repairMode,
-      targetHitsCount: targetHits.length,
-      providerUsed
+      providerUsed,
+      userInput,
+      assistantTextPtBr: enforced.text,
+      targetHitsCount: targetHits.length
     });
 
     const tokens = userInput.toLowerCase().split(/\W+/).filter(Boolean).slice(0, 6);
