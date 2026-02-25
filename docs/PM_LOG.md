@@ -66,3 +66,10 @@
 - W1-008 completed:
   - Added Prisma schema draft for Postgres persistence focused on sessions/summaries/exposures/anonymized telemetry.
   - Explicitly excludes full raw transcript persistence by default.
+
+
+- Architecture rework (LLM-led conversation, controller-led guardrails):
+  - Replaced most hardcoded intent/topic heuristics with structured LLM turn decisions (`intentAligned`, `repairNeeded`, `shiftIntent`, `nextQuestion`).
+  - Controller now enforces only non-negotiables (repair attempt cap, topic shift handling, Level-0 post-validation, fallback safety).
+  - Added robust degraded parsing path for imperfect model JSON outputs.
+  - Added social side-step allowance so natural replies ("I'm good, how are you?") do not trigger unnecessary repair.

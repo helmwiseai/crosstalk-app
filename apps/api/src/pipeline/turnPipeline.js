@@ -1,8 +1,17 @@
 import { detectMisunderstanding, enforceLevel0Output } from '../constraintPolicy.js';
-import { buildIntentTelemetry, buildTurnTelemetry } from '../telemetry.js';
-import { buildRepairPrompt, classifyAssistantIntent, isUserAligned, userRequestedTopicShift } from '../intent.js';
+import { buildTurnTelemetry } from '../telemetry.js';
 
 const MAX_REPAIR_ATTEMPTS = 3;
+
+function isSocialSideStep(text = '') {
+  return /(how are you|como vai|tudo bem\?|i'?m good|im good|thank you|obrigado|bom dia|boa noite)/i.test(text);
+}
+
+function chooseNextTopic(current) {
+  const options = ['comida', 'casa', 'rotina', 'família', 'trabalho'];
+  const idx = options.indexOf(current);
+  return options[(idx + 1) % options.length];
+}
 
 export class TurnPipeline {
   constructor({ sessionRepository, generator, fallbackGenerator }) {
@@ -15,79 +24,86 @@ export class TurnPipeline {
     const session = this.sessionRepository.getSession(sessionId);
     if (!session) return null;
 
-    if (userRequestedTopicShift(userInput)) {
-      const nextTopic = session.topic === 'comida' ? 'casa' : 'comida';
-      session.topic = nextTopic;
-      session.summaryKeywords.add(nextTopic);
-      session.flow.repairAttempt = 0;
-      session.flow.lastAssistantIntent = 'statement';
-      session.flow.lastAssistantQuestion = '';
-      this.sessionRepository.saveSession(session);
-      return {
-        sessionId,
-        assistantTextPtBr: `Tudo bem, mudamos de assunto. Agora falamos de ${nextTopic}. Você gosta disso?`,
-        repairMode: false,
-        targetHits: [],
-        complexity: 'simple',
-        validation: { valid: true },
-        providerUsed: 'controller',
-        intentAligned: true,
-        repairAttempt: 0
-      };
+    const misunderstandingCue = detectMisunderstanding(userInput);
+
+    let decision;
+    let providerUsed = 'primary';
+    try {
+      decision = await this.generator.generate({
+        topic: session.topic,
+        targetWords: session.targetWords,
+        targetLanguage: session.targetLanguage,
+        userInput,
+        lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
+        repairAttempt: session.flow.repairAttempt || 0,
+        activeRepair: (session.flow.repairAttempt || 0) > 0
+      });
+    } catch (_err) {
+      decision = this.fallbackGenerator.generate({
+        topic: session.topic,
+        targetWords: session.targetWords,
+        targetLanguage: session.targetLanguage,
+        userInput,
+        lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
+        repairAttempt: session.flow.repairAttempt || 0,
+        activeRepair: (session.flow.repairAttempt || 0) > 0
+      });
+      providerUsed = 'fallback';
     }
 
-    const previousIntent = session.flow?.lastAssistantIntent || 'statement';
-    const intentAligned = isUserAligned({ intentType: previousIntent, userInput });
-    const misunderstanding = detectMisunderstanding(userInput);
-    const forcedRepair = !intentAligned || misunderstanding;
+    const shiftIntent = Boolean(decision.shiftIntent);
+    const llmRepairNeeded = Boolean(decision.repairNeeded);
+    const hasActiveQuestion = Boolean(session.flow.lastAssistantQuestion);
+    const socialSideStep = isSocialSideStep(userInput);
+    const repairMode = !shiftIntent && !socialSideStep && (misunderstandingCue || (hasActiveQuestion && llmRepairNeeded));
 
-    if (forcedRepair) {
+    const effectiveIntentAligned = hasActiveQuestion ? Boolean(decision.intentAligned) : true;
+
+    if (repairMode) {
       session.flow.repairAttempt = (session.flow.repairAttempt || 0) + 1;
     } else {
       session.flow.repairAttempt = 0;
     }
 
-    const shouldAbandon = session.flow.repairAttempt >= MAX_REPAIR_ATTEMPTS;
-
-    let rawGeneratedText;
-    let providerUsed = 'primary';
-
-    if (shouldAbandon) {
-      rawGeneratedText = 'Tudo bem, não é importante. Vamos continuar devagar no mesmo tema.';
-      providerUsed = 'controller';
+    if (session.flow.repairAttempt >= MAX_REPAIR_ATTEMPTS) {
+      decision.assistantTextPtBr = 'Tudo bem, não é importante. Vamos continuar com calma.';
+      decision.nextQuestion = '';
       session.flow.repairAttempt = 0;
-    } else if (forcedRepair && session.flow.lastAssistantQuestion) {
-      rawGeneratedText = buildRepairPrompt({
-        originalQuestion: session.flow.lastAssistantQuestion,
-        attempt: session.flow.repairAttempt
-      });
       providerUsed = 'controller';
-    } else {
-      try {
-        rawGeneratedText = await this.generator.generate({
-          topic: session.topic,
-          targetWords: session.targetWords,
-          repairMode: false,
-          targetLanguage: session.targetLanguage,
-          userInput
-        });
-      } catch (_err) {
-        rawGeneratedText = this.fallbackGenerator.generate({
-          topic: session.topic,
-          targetWords: session.targetWords,
-          repairMode: false,
-          targetLanguage: session.targetLanguage,
-          userInput
-        });
-        providerUsed = 'fallback';
-      }
     }
 
-    const enforced = enforceLevel0Output({
-      rawText: rawGeneratedText,
+    if (shiftIntent) {
+      const nextTopic = chooseNextTopic(session.topic);
+      session.topic = nextTopic;
+      session.summaryKeywords.add(nextTopic);
+      decision.assistantTextPtBr = `Tudo bem, mudamos de assunto. Agora falamos de ${nextTopic}. O que você acha?`;
+      decision.nextQuestion = 'O que você acha?';
+      providerUsed = providerUsed === 'primary' ? 'controller' : providerUsed;
+    }
+
+    let enforced = enforceLevel0Output({
+      rawText: decision.assistantTextPtBr,
       targetLanguage: session.targetLanguage,
-      repairMode: forcedRepair && !shouldAbandon
+      repairMode
     });
+
+    if (!enforced.validation?.valid) {
+      const safeFallback = this.fallbackGenerator.generate({
+        topic: session.topic,
+        targetWords: session.targetWords,
+        targetLanguage: session.targetLanguage,
+        userInput,
+        lastAssistantQuestion: session.flow.lastAssistantQuestion || '',
+        repairAttempt: session.flow.repairAttempt || 0,
+        activeRepair: repairMode
+      });
+      enforced = enforceLevel0Output({
+        rawText: safeFallback.assistantTextPtBr,
+        targetLanguage: session.targetLanguage,
+        repairMode
+      });
+      providerUsed = 'fallback';
+    }
 
     const targetHits = [];
     for (const word of session.targetWords) {
@@ -97,16 +113,12 @@ export class TurnPipeline {
       }
     }
 
-    const nextIntent = classifyAssistantIntent(enforced.text);
-    if (nextIntent !== 'statement') {
-      session.flow.lastAssistantQuestion = enforced.text;
-      session.flow.lastAssistantIntent = nextIntent;
-    }
+    session.flow.lastAssistantQuestion = decision.nextQuestion || '';
 
     session.turns.push({
       at: Date.now(),
       inputMode,
-      repairMode: forcedRepair,
+      repairMode,
       targetHitsCount: targetHits.length,
       providerUsed
     });
@@ -114,13 +126,12 @@ export class TurnPipeline {
     const tokens = userInput.toLowerCase().split(/\W+/).filter(Boolean).slice(0, 6);
     tokens.forEach((t) => session.summaryKeywords.add(t));
 
-    session.telemetry.push(buildIntentTelemetry({ intentType: previousIntent, aligned: intentAligned }));
     session.telemetry.push(
       buildTurnTelemetry({
-        repairMode: forcedRepair,
+        repairMode,
         targetHits,
         providerUsed,
-        intentAligned,
+        intentAligned: effectiveIntentAligned,
         repairAttempt: session.flow.repairAttempt || 0
       })
     );
@@ -130,12 +141,12 @@ export class TurnPipeline {
     return {
       sessionId,
       assistantTextPtBr: enforced.text,
-      repairMode: forcedRepair,
+      repairMode,
       targetHits,
       complexity: enforced.complexity,
       validation: enforced.validation,
       providerUsed,
-      intentAligned,
+      intentAligned: effectiveIntentAligned,
       repairAttempt: session.flow.repairAttempt || 0
     };
   }
