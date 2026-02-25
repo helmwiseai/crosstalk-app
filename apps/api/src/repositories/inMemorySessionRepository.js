@@ -27,7 +27,12 @@ export class InMemorySessionRepository extends SessionRepository {
       startedAt: Date.now(),
       turns: [],
       summaryKeywords: new Set([selectedTopic]),
-      telemetry: []
+      telemetry: [],
+      flow: {
+        repairAttempt: 0,
+        lastAssistantQuestion: '',
+        lastAssistantIntent: 'statement'
+      }
     };
 
     this.sessions.set(sessionId, session);

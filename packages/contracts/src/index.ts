@@ -25,6 +25,9 @@ export type TurnResponse = {
   repairMode: boolean;
   targetHits: string[];
   complexity: 'simple' | 'simpler';
+  providerUsed: 'primary' | 'fallback' | 'controller';
+  intentAligned: boolean;
+  repairAttempt: number;
 };
 
 export type EndSessionResponse = {

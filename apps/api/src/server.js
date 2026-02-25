@@ -69,7 +69,9 @@ app.post('/sessions/:sessionId/turn', async (req, res) => {
     repairMode: turn.repairMode,
     targetHits: turn.targetHits,
     complexity: turn.complexity,
-    providerUsed: turn.providerUsed
+    providerUsed: turn.providerUsed,
+    intentAligned: turn.intentAligned,
+    repairAttempt: turn.repairAttempt
   });
 });
 

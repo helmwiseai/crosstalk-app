@@ -26,3 +26,4 @@ Stand up the MVP technical spine for Crosstalk: session lifecycle + enforceable 
 - W1-009: Provider adapter interfaces (Gemini-first) ✅ (`GeminiGenerator` + stub fallback)
 - W1-010: Local test script for full session loop ✅ (`npm run test:e2e`)
 - W1-011: Replace in-memory repository with Postgres adapter
+- W1-012: Conversation integrity gate ✅ (intent alignment + repair loop + no-blind-yes-and)

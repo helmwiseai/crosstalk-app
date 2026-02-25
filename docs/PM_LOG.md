@@ -32,6 +32,12 @@
   - Kept Level-0 policy enforcement server-side after generation.
   - Added local env loader for VPS/dev simplicity.
   - Verified live request path returns `providerUsed: "primary"` when Gemini succeeds.
+- Conversation integrity rework (Phase 1) completed:
+  - Added intent classification/alignment gate (`intent.js`).
+  - Added repair-attempt state and graceful-abandon behavior in turn pipeline.
+  - Added no-blind-yes-and flow: misaligned replies trigger controller repair, not topic drift.
+  - Added telemetry fields for intent alignment + repair attempts.
+  - Verified with scripted misalignment test ("I love bread" after a question) -> repair path triggered (`providerUsed: controller`, `intentAligned: false`).
 
 ## PM Questions Pending
 1. For summary retention window, keep session summaries indefinitely or auto-expire after N days?

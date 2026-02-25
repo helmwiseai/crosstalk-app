@@ -14,7 +14,8 @@ export class GeminiGenerator {
       repairMode ? 'O usuário não entendeu; simplifique ainda mais e repita com calma.' : 'Mantenha fluxo natural e simples.',
       `Tema: ${topic}.`,
       `Use naturalmente estas palavras quando possível: ${targetWords.join(', ')}.`,
-      'Retorne apenas a resposta falada, sem explicações meta.'
+      'Retorne apenas a resposta falada, sem explicações meta.',
+      'No final, faça uma pergunta muito simples (sim/não ou escolha) sobre o mesmo tema.'
     ].join(' ');
 
     const body = {

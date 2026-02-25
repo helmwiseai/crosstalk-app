@@ -6,9 +6,16 @@ export function createTelemetryEvent(type, payload = {}) {
   };
 }
 
-export function buildTurnTelemetry({ repairMode, targetHits }) {
+export function buildTurnTelemetry({ repairMode, targetHits, providerUsed, intentAligned, repairAttempt }) {
   return createTelemetryEvent('TurnEvaluated', {
     repairMode,
-    targetHitCount: targetHits.length
+    targetHitCount: targetHits.length,
+    providerUsed,
+    intentAligned,
+    repairAttempt
   });
+}
+
+export function buildIntentTelemetry({ intentType, aligned }) {
+  return createTelemetryEvent('IntentEvaluated', { intentType, aligned });
 }
