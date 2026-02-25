@@ -44,3 +44,14 @@
 5. Telemetry approved: store anonymized turn signals (`repairMode`, `targetHits` count) without full text.
 6. Week 2 execution order: Gemini text integration first, then realtime voice transport.
 7. Product direction reminder: maintain end-goal architecture for realtime voice-first Crosstalk experience while sequencing for fastest shippable MVP.
+
+## Product Note (ALG exposure model) — 2026-02-25
+- Pat confirmed conceptual direction for Level 0:
+  - Define Level-0 lexicon as approximately the 300 most common words in target language.
+  - Goal is high-frequency comprehensible exposure, not tight scripted output.
+  - Working threshold concept: each Level-0 word should be heard at least ~100 times before advancing focus.
+- Implementation preference:
+  - Maintain natural conversation flow (ALG-aligned), avoid over-constrained robotic output.
+  - Track broader incidental vocabulary, but keep scheduler pressure on underexposed Level-0 words.
+  - Favor dynamic focus bands over rigid hard-gate progression to avoid stale conversations.
+- Action: capture as design rule now; defer coding changes until explicitly requested.
