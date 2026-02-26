@@ -110,8 +110,9 @@ async function sendTurn() {
   try {
     const out = await api(`/sessions/${sessionId}/turn`, { userInput: text, inputMode: 'text' });
     appendBot(out.assistantTextPtBr, `provider=${out.providerUsed} repair=${out.repairMode}`);
-    autoFollowupArmed = true;
-    armIdleFollowup();
+    // Only arm silence follow-up when bot ended with a question / explicit prompt.
+    autoFollowupArmed = /\?|\b(você está aí|voce esta ai|me conta|fala pra mim)\b/i.test(out.assistantTextPtBr || '');
+    if (autoFollowupArmed) armIdleFollowup();
   } catch (e) {
     appendBot(`Send failed: ${e.message}`);
   }
