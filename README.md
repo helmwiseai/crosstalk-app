@@ -22,10 +22,15 @@ Voice-first language acquisition app.
 ## Status
 Week 1 foundation is live:
 - Session lifecycle endpoints implemented
-- Turn pipeline refactor in place (repository + generator + policy enforcement + telemetry)
+- Prompt-first turn pipeline in place (natural conversation + light guardrails)
 - E2E smoke script available (`npm run test:e2e`)
-
+- Simple web UI available (`apps/web`)
 
 ## Quick text demo
 1. Start API: `node apps/api/src/server.js`
 2. In a second terminal: `npm run demo:text`
+
+## Quick web UI
+1. Terminal A: `node apps/api/src/server.js`
+2. Terminal B: `npm run dev:web`
+3. Open: `http://127.0.0.1:5173`

@@ -2,8 +2,10 @@
   "name": "@crosstalk/web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "dev": "node server.js",
     "build": "echo web build skipped",
-    "check": "echo web check ok"
+    "check": "node --check server.js && echo web check ok"
   }
 }

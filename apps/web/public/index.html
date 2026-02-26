@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crosstalk UI</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>Crosstalk — Test UI</h1>
+
+      <section class="card">
+        <div class="row">
+          <label>User ID <input id="userId" value="pat" /></label>
+          <label>Topic (optional) <input id="topic" placeholder="auto" /></label>
+          <button id="startBtn">Start Session</button>
+          <button id="endBtn" disabled>End Session</button>
+        </div>
+        <p id="sessionMeta" class="meta">No active session.</p>
+      </section>
+
+      <section class="card">
+        <div id="chat" class="chat"></div>
+        <div class="row">
+          <input id="msg" placeholder="Type message..." disabled />
+          <button id="sendBtn" disabled>Send</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Session Report</h3>
+        <pre id="report">(none)</pre>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
