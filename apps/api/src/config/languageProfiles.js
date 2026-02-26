@@ -3,8 +3,8 @@ export const languageProfiles = {
     code: 'pt-BR',
     displayName: 'Portuguese (Brazil)',
     level0: {
-      maxWordsSimple: 24,
-      maxWordsRepair: 16,
+      maxWordsSimple: 90,
+      maxWordsRepair: 45,
       minWords: 3,
       requireTargetLanguage: true
     },
