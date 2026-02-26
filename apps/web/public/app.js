@@ -1,4 +1,4 @@
-let apiBase = 'http://127.0.0.1:3001';
+let apiBase = '/api';
 let sessionId = null;
 let targetWords = [];
 
@@ -15,10 +15,9 @@ const els = {
 };
 
 async function boot() {
-  const res = await fetch('/config');
-  const cfg = await res.json();
-  apiBase = cfg.apiBase;
-  appendBot(`UI connected. API: ${apiBase}`);
+  // Browser always talks to same-origin proxy to avoid CORS/tunnel issues.
+  apiBase = '/api';
+  appendBot(`UI connected. API proxy: ${apiBase}`);
 }
 
 function append(who, text, meta = '') {
