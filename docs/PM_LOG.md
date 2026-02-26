@@ -74,3 +74,63 @@
   - Shifted iteration model to session-based prompt tuning: run session -> collect report -> adjust next prompt.
   - Added end-of-session `sessionReport` with prompt-tuning hints (repair turns, avg response length, low-exposure words).
   - Added full-session all-word exposure tracking (not only target words) for richer analysis and prompt tuning.
+
+## 2026-02-26 — Strategic heartbeat (plan progress + anti-cornering)
+### Progress vs roadmap
+- Week 1 objective is effectively complete for backend spine; only major open infra item is `W1-011` (Postgres adapter replacing in-memory repository).
+- Current sequencing still aligns with agreed roadmap: Gemini text path first, realtime voice transport second.
+
+### Open risks / local optimization signals
+1. **Durability risk (high):** in-memory repository is still active, so session continuity and measurement integrity are fragile between restarts.
+2. **Prompt-overfit risk (medium):** session-based prompt tuning is productive, but without fixed acceptance tests it can optimize for recent demo behavior while regressing broader conversation quality.
+3. **Provider coupling risk (medium):** Gemini-first path is fine for MVP speed, but current implementation could drift toward Gemini-specific assumptions before alternative provider parity checks exist.
+4. **Language-scope drift risk (medium):** pt-BR focus is correct for MVP; risk is hardcoding creeping into policy/exposure logic and making later multi-language extension expensive.
+
+### Anti-cornering check (short)
+- **Not cornered yet**, but trend is visible toward prompt-led iteration as the primary lever.
+- To preserve long-term flexibility, keep control points in code (interfaces, evaluators, storage model) and use prompts as behavior tuning, not architecture.
+
+### Next 3 priorities
+1. **Close W1-011:** ship Postgres session repository + migration path; make it the default non-test backend.
+2. **Add a lightweight eval harness:** define 8-12 repeatable turn scenarios (intent alignment, repair behavior, target-word exposure pressure, hallucination guardrails) and gate prompt changes against it.
+3. **Run a de-hardcode pass for multilingual readiness:** centralize all pt-BR specifics into language profiles/config and add one “shadow” second-language config to prove no hidden assumptions.
+
+## 2026-02-26 — Strategic heartbeat (follow-up recheck)
+### Progress vs roadmap
+- No material change since prior heartbeat entry today: Week 1 backend spine still complete except `W1-011`.
+- Sequencing remains valid: Gemini text stabilization before realtime voice transport.
+
+### Open risks / dead-end check
+- **Durability:** unchanged high risk until Postgres adapter lands.
+- **Evaluation gap:** unchanged medium risk; prompt changes still weakly gated.
+- **Provider/language flexibility:** unchanged medium risk; avoid Gemini/pt-BR assumptions in core flow.
+
+### Anti-cornering verdict
+- Still **not cornered**, but no evidence yet that flexibility is enforced by tests.
+- Rule held: prompt tuning may optimize behavior, but architecture guarantees must come from interfaces + repeatable evals.
+
+### Next 3 priorities (unchanged)
+1. Ship `W1-011` Postgres repository and make it default runtime backend.
+2. Add 8-12 repeatable acceptance scenarios and gate prompt changes.
+3. Complete de-hardcode pass and validate with one shadow second-language profile.
+
+## 2026-02-26 — QA Crosstalk regression sweep (cron)
+### Scope executed
+- API health check (`GET /health`) on local server.
+- `npm run test:e2e` (`scripts/e2e-session-smoke.sh`).
+- Manual natural-conversation sanity spot-check (`/sessions/start` → two `/turn` calls incl. misunderstanding cue → `/sessions/end`).
+- Drift check against prompt-first architecture intent.
+
+### Results
+- **API health:** pass (`ok: true`, service live).
+- **E2E smoke:** pass.
+- **Natural conversation sanity:** pass (normal turn stayed natural; misunderstanding cue triggered `repairMode: true`; session end returned summary/exposure/sessionReport).
+
+### Findings (non-blocking, architecture drift risk)
+1. **Durability gap remains active:** runtime still instantiates `InMemorySessionRepository` in `apps/api/src/server.js` (Postgres adapter not yet wired as default).
+2. **MVP language gate is still hardcoded at route level:** `/sessions/start` rejects non-`pt-BR` directly in server route logic. This is acceptable for MVP but is a known drift pressure vs profile-driven multi-language architecture.
+
+### QA verdict
+- Regression sweep **functionally passes**.
+- No immediate release blocker from this run.
+- Keep `W1-011` + de-hardcode pass as top architecture integrity priorities.
