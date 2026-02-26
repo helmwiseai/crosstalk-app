@@ -1,6 +1,10 @@
 let apiBase = '/api';
 let sessionId = null;
 let targetWords = [];
+let idleTimer = null;
+let autoFollowupArmed = false;
+
+const SILENCE_MS = 5000;
 
 const els = {
   userId: document.getElementById('userId'),
@@ -15,7 +19,6 @@ const els = {
 };
 
 async function boot() {
-  // Browser always talks to same-origin proxy to avoid CORS/tunnel issues.
   apiBase = '/api';
   appendBot(`UI connected. API proxy: ${apiBase}`);
 }
@@ -57,6 +60,29 @@ function setActive(active) {
   els.endBtn.disabled = !active;
 }
 
+function clearIdleTimer() {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+}
+
+function armIdleFollowup() {
+  clearIdleTimer();
+  if (!sessionId || !autoFollowupArmed) return;
+  idleTimer = setTimeout(async () => {
+    if (!sessionId || !autoFollowupArmed) return;
+    try {
+      const out = await api(`/sessions/${sessionId}/turn`, { userInput: '__silence__', inputMode: 'text' });
+      appendBot(out.assistantTextPtBr, `provider=${out.providerUsed} repair=${out.repairMode} auto-followup`);
+      // only one auto-followup per user turn to avoid spam loops
+      autoFollowupArmed = false;
+    } catch (e) {
+      appendBot(`Auto follow-up failed: ${e.message}`);
+    }
+  }, SILENCE_MS);
+}
+
 els.startBtn.onclick = async () => {
   try {
     const out = await api('/sessions/start', {
@@ -78,11 +104,14 @@ els.startBtn.onclick = async () => {
 async function sendTurn() {
   const text = els.msg.value.trim();
   if (!text || !sessionId) return;
+  clearIdleTimer();
   els.msg.value = '';
   appendUser(text);
   try {
     const out = await api(`/sessions/${sessionId}/turn`, { userInput: text, inputMode: 'text' });
     appendBot(out.assistantTextPtBr, `provider=${out.providerUsed} repair=${out.repairMode}`);
+    autoFollowupArmed = true;
+    armIdleFollowup();
   } catch (e) {
     appendBot(`Send failed: ${e.message}`);
   }
@@ -95,6 +124,7 @@ els.msg.addEventListener('keydown', (e) => {
 
 els.endBtn.onclick = async () => {
   if (!sessionId) return;
+  clearIdleTimer();
   try {
     const out = await api('/sessions/end', { sessionId });
     appendBot('Sessão encerrada.');

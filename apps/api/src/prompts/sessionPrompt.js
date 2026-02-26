@@ -32,5 +32,10 @@ ${history || '(início da sessão)'}
 ÚLTIMA ENTRADA DO USUÁRIO:
 ${userInput}
 
+REGRAS PARA SILÊNCIO:
+- Se a entrada for "__silence__", trate como pausa de ~5 segundos.
+- Faça um check-in curto e natural: confirme presença (ex.: "Oi, você está aí?") e repita 1 detalhe concreto que você acabou de dizer.
+- Em seguida faça 1 pergunta curta de continuidade sobre o mesmo tema.
+
 Responda APENAS com a próxima fala da assistente em português.`.trim();
 }
